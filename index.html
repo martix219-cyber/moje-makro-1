@@ -1,1 +1,269 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moje Makro</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background-color: #121212;
+      color: #ffffff;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    button:disabled {
+      background-color: #555;
+    }
+    .user-info {
+      font-size: 14px;
+      color: #aaa;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: #1e1e1e;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 6px;
+      border: 1px solid #333;
+      background: #2a2a2a;
+      color: white;
+      box-sizing: border-box;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    li {
+      background: #2a2a2a;
+      margin: 8px 0;
+      padding: 12px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Moje Makro</h1>
+    <button id="loginBtn">Zaloguj przez Google</button>
+  </div>
+
+  <div id="userStatus" class="user-info">Niezalogowano</div>
+
+  <!-- Sekcja dodawania posiłku -->
+  <div class="card">
+    <h3>Dodaj posiłek</h3>
+    <input type="text" id="mealName" placeholder="Nazwa posiłku (np. Owsianka)" />
+    <input type="number" id="mealKcal" placeholder="Kalorie (kcal)" />
+    <input type="number" id="mealProtein" placeholder="Białko (g)" />
+    <input type="number" id="mealCarbs" placeholder="Węglowodany (g)" />
+    <input type="number" id="mealFat" placeholder="Tłuszcze (g)" />
+    <button id="addMealBtn" style="width: 100%; margin-top: 10px;">Dodaj do chmury</button>
+  </div>
+
+  <!-- Lista posiłków z chmury -->
+  <div class="card">
+    <h3>Twoje posiłki</h3>
+    <ul id="mealsList"></ul>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getAuth, 
+      signInWithPopup, 
+      GoogleAuthProvider, 
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { 
+      getFirestore, 
+      collection, 
+      addDoc, 
+      getDocs, 
+      query, 
+      where 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAbfhomXpRQjp5Am3C2tqijyqfjkuLgoNA",
+      authDomain: "moje-makro.firebaseapp.com",
+      projectId: "moje-makro",
+      storageBucket: "moje-makro.firebasestorage.app",
+      messagingSenderId: "217567728597",
+      appId: "1:217567728597:web:efb47360c599b18065635c",
+      measurementId: "G-H6HMQF9FYB"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUser = null;
+
+    const loginBtn = document.getElementById('loginBtn');
+    const userStatus = document.getElementById('userStatus');
+    const addMealBtn = document.getElementById('addMealBtn');
+    const mealsList = document.getElementById('mealsList');
+
+    // Obsługa Przysku Logowania
+    loginBtn.addEventListener('click', async () => {
+      if (currentUser) {
+        await signOut(auth);
+      } else {
+        const provider = new GoogleAuthProvider();
+        try {
+          await signInWithPopup(auth, provider);
+        } catch (err) {
+          console.error("Błąd logowania:", err);
+        }
+      }
+    });
+
+    // Śledzenie stanu zalogowania
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        loginBtn.textContent = "Wyloguj";
+        userStatus.textContent = `Zalogowano jako: ${user.displayName || user.email}`;
+        
+        await migrateLocalStorageToFirebase();
+        await renderMeals();
+      } else {
+        currentUser = null;
+        loginBtn.textContent = "Zaloguj przez Google";
+        userStatus.textContent = "Niezalogowano";
+        mealsList.innerHTML = "<li>Zaloguj się, aby zobaczyć swoje posiłki.</li>";
+      }
+    });
+
+    // Zapisywanie nowego posiłku bezpośrednio do Firebase
+    addMealBtn.addEventListener('click', async () => {
+      if (!currentUser) {
+        alert("Musisz się zalogować, aby dodać posiłek!");
+        return;
+      }
+
+      const name = document.getElementById('mealName').value;
+      const kcal = document.getElementById('mealKcal').value;
+      const protein = document.getElementById('mealProtein').value;
+      const carbs = document.getElementById('mealCarbs').value;
+      const fat = document.getElementById('mealFat').value;
+
+      if (!name) {
+        alert("Podaj nazwę posiłku!");
+        return;
+      }
+
+      const mealData = {
+        name,
+        kcal: Number(kcal) || 0,
+        protein: Number(protein) || 0,
+        carbs: Number(carbs) || 0,
+        fat: Number(fat) || 0,
+        userId: currentUser.uid,
+        createdAt: new Date().toISOString()
+      };
+
+      try {
+        await addDoc(collection(db, "meals"), mealData);
+        
+        // Wyczyszczenie pól
+        document.getElementById('mealName').value = '';
+        document.getElementById('mealKcal').value = '';
+        document.getElementById('mealProtein').value = '';
+        document.getElementById('mealCarbs').value = '';
+        document.getElementById('mealFat').value = '';
+
+        // Odświeżenie listy posiłków
+        await renderMeals();
+      } catch (e) {
+        console.error("Błąd zapisu:", e);
+      }
+    });
+
+    // Wyświetlanie posiłków z bazy Firebase
+    async function renderMeals() {
+      if (!currentUser) return;
+
+      mealsList.innerHTML = "<li>Ładowanie posiłków...</li>";
+
+      try {
+        const q = query(collection(db, "meals"), where("userId", "==", currentUser.uid));
+        const querySnapshot = await getDocs(q);
+        
+        mealsList.innerHTML = "";
+
+        if (querySnapshot.empty) {
+          mealsList.innerHTML = "<li>Brak zapisanych posiłków.</li>";
+          return;
+        }
+
+        querySnapshot.forEach((doc) => {
+          const meal = doc.data();
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <span><strong>${meal.name}</strong> (${meal.kcal} kcal)</span>
+            <small>B: ${meal.protein}g | W: ${meal.carbs}g | T: ${meal.fat}g</small>
+          `;
+          mealsList.appendChild(li);
+        });
+      } catch (e) {
+        console.error("Błąd pobierania:", e);
+      }
+    }
+
+    // Automatyczne przeniesienie starych danych z localStorage do bazy po zalogowaniu
+    async function migrateLocalStorageToFirebase() {
+      if (!currentUser) return;
+      const possibleKeys = ['dieta', 'meals', 'my_macro_meals', 'posilki'];
+      for (const key of possibleKeys) {
+        const localData = localStorage.getItem(key);
+        if (localData) {
+          try {
+            const meals = JSON.parse(localData);
+            if (Array.isArray(meals) && meals.length > 0) {
+              for (const meal of meals) {
+                await addDoc(collection(db, "meals"), {
+                  ...meal,
+                  userId: currentUser.uid,
+                  createdAt: meal.createdAt || new Date().toISOString()
+                });
+              }
+              localStorage.removeItem(key);
+            }
+          } catch (e) {
+            console.error("Błąd migracji:", e);
+          }
+        }
+      }
+    }
+  </script>
+</body>
+</html>
 
