@@ -93,6 +93,11 @@
 
     <div id="userStatus" style="font-size:11px; color: var(--subtext); text-align:center; padding: 4px; background: #1a1a1a;">Niezalogowano (dane lokalne)</div>
 
+    <!-- PASEK SERII DNI (STREAK) -->
+    <div id="streak-box" style="text-align:center; padding: 8px; background: #1e1e1e; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: bold; color: #ff9800;">
+        🔥 Seria: 0 dni z rzędu!
+    </div>
+
     <!-- DZIEŃ -->
     <div id="page-panel" class="page active">
         <div class="card">
@@ -476,6 +481,44 @@
             });
         };
 
+        // SYSTEM NAWYKÓW (STREAKS)
+        window.calcStreak = function() {
+            let streak = 0;
+            let checkDate = new Date();
+            
+            let todayStr = checkDate.toISOString().split('T')[0];
+            checkDate.setDate(checkDate.getDate() - 1);
+            let yesterdayStr = checkDate.toISOString().split('T')[0];
+
+            let isTodayActive = window.db.days[todayStr] && (window.db.days[todayStr].kcal > 0 || window.db.days[todayStr].weight > 0 || window.db.days[todayStr].water > 0);
+            let isYesterdayActive = window.db.days[yesterdayStr] && (window.db.days[yesterdayStr].kcal > 0 || window.db.days[yesterdayStr].weight > 0 || window.db.days[yesterdayStr].water > 0);
+
+            if (!isTodayActive && !isYesterdayActive) {
+                document.getElementById('streak-box').innerText = `🔥 Seria: 0 dni (Uzupełnij dzisiaj wpis!)`;
+                return;
+            }
+
+            let currentDate = isTodayActive ? new Date() : checkDate;
+
+            while (true) {
+                let dateStr = currentDate.toISOString().split('T')[0];
+                let dayData = window.db.days[dateStr];
+
+                if (dayData && (dayData.kcal > 0 || dayData.weight > 0 || dayData.water > 0)) {
+                    streak++;
+                    currentDate.setDate(currentDate.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+
+            let msg = "Złapałaś rytm! 🚀";
+            if (streak < 3) msg = "Dobry start! 💪";
+            if (streak >= 7) msg = "Jesteś na fali! 🔥";
+
+            document.getElementById('streak-box').innerText = `🔥 Seria: ${streak} ${streak === 1 ? 'dzień' : 'dni'} z rzędu! (${msg})`;
+        };
+
         window.updateDashboard = function() {
             const today = window.db.days[window.todayKey] || { kcal: 0, p: 0, f: 0, c: 0, watch: 0, water: 0 };
             document.getElementById('disp-kcal').innerText = today.kcal || 0;
@@ -497,6 +540,7 @@
             document.getElementById('kcal-progress-text').innerText = `${today.kcal || 0} / ${target} kcal (${percent}%)`;
 
             window.renderMacroChart();
+            window.calcStreak();
         };
 
         let macroChartInstance = null;
