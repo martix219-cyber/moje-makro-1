@@ -13,6 +13,8 @@
             --accent: #4caf50;
             --accent-blue: #4285f4;
             --accent-water: #2196f3;
+            --accent-protein: #9c27b0;
+            --accent-steps: #00bcd4;
             --text: #ffffff;
             --subtext: #aaaaaa;
             --border: #333333;
@@ -57,9 +59,12 @@
 
         .progress-container {
             background: #2a2a2a; border-radius: 10px; height: 20px; width: 100%;
-            overflow: hidden; margin-top: 8px; border: 1px solid var(--border); position: relative;
+            overflow: hidden; margin-top: 6px; border: 1px solid var(--border); position: relative;
         }
         .progress-bar { background: linear-gradient(90deg, #4caf50, #81c784); height: 100%; width: 0%; transition: width 0.4s ease; }
+        .progress-bar-protein { background: linear-gradient(90deg, #9c27b0, #ba68c8); }
+        .progress-bar-steps { background: linear-gradient(90deg, #00bcd4, #4dd0e1); }
+
         .progress-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 11px; font-weight: bold; color: #fff; text-shadow: 0 0 4px rgba(0,0,0,0.8); }
 
         label { font-size: 12px; color: var(--subtext); display: block; margin-top: 8px; }
@@ -109,11 +114,30 @@
                 <div class="stat-box"><div class="stat-num" id="disp-balance">0</div><div class="stat-lbl">📉 Bilans netto</div></div>
             </div>
 
-            <div style="margin-top: 12px;">
+            <!-- PASEK: KALORIE -->
+            <div style="margin-top: 15px;">
                 <label style="margin-top: 0; font-weight: bold; color: #fff;">Cel kalorii:</label>
                 <div class="progress-container">
                     <div class="progress-bar" id="kcal-progress"></div>
                     <div class="progress-text" id="kcal-progress-text">0%</div>
+                </div>
+            </div>
+
+            <!-- PASEK: BIAŁKO -->
+            <div style="margin-top: 12px;">
+                <label style="margin-top: 0; font-weight: bold; color: #fff;">Cel białka:</label>
+                <div class="progress-container">
+                    <div class="progress-bar progress-bar-protein" id="protein-progress"></div>
+                    <div class="progress-text" id="protein-progress-text">0%</div>
+                </div>
+            </div>
+
+            <!-- PASEK: KROKI -->
+            <div style="margin-top: 12px;">
+                <label style="margin-top: 0; font-weight: bold; color: #fff;">Cel kroków:</label>
+                <div class="progress-container">
+                    <div class="progress-bar progress-bar-steps" id="steps-progress"></div>
+                    <div class="progress-text" id="steps-progress-text">0%</div>
                 </div>
             </div>
         </div>
@@ -148,7 +172,11 @@
         <div id="wpis-tiles" class="tiles-grid">
             <div class="tile-card" onclick="openWpisSubForm('posilki')">
                 <span class="tile-icon">🍽️</span>
-                <span class="tile-title">Posiłek / Kalkulator</span>
+                <span class="tile-title">Posiłek / Makro</span>
+            </div>
+            <div class="tile-card" onclick="openWpisSubForm('kroki')">
+                <span class="tile-icon">👟</span>
+                <span class="tile-title">Kroki</span>
             </div>
             <div class="tile-card" onclick="openWpisSubForm('waga')">
                 <span class="tile-icon">⚖️</span>
@@ -158,13 +186,13 @@
                 <span class="tile-icon">🔥</span>
                 <span class="tile-title">Spalone kcal</span>
             </div>
-            <div class="tile-card" onclick="openWpisSubForm('komentarze')">
+            <div class="tile-card" style="grid-column: span 2" onclick="openWpisSubForm('komentarze')">
                 <span class="tile-icon">📝</span>
                 <span class="tile-title">Komentarze</span>
             </div>
         </div>
 
-        <!-- FORMULARZ: POSIŁKI & KALKULATOR -->
+        <!-- FORMULARZ: POSIŁKI -->
         <div id="subform-posilki" class="card sub-form">
             <button class="btn-back" onclick="closeWpisSubForm()">← Powrót do kafelków</button>
             <h2>🍽️ Dodaj Posiłek</h2>
@@ -191,7 +219,16 @@
             <button class="btn btn-sec" onclick="saveAsPreset()">★ Zapisz jako Szablon</button>
         </div>
 
-        <!-- FORMULARZ: WAGA Z GODZINĄ -->
+        <!-- FORMULARZ: KROKI -->
+        <div id="subform-kroki" class="card sub-form">
+            <button class="btn-back" onclick="closeWpisSubForm()">← Powrót</button>
+            <h2>👟 Zapisz Liczbę Kroki</h2>
+            <label>Liczba kroków</label>
+            <input type="number" id="inp-steps" placeholder="np. 8500">
+            <button class="btn" onclick="saveWpisPart('kroki')">Zapisz Kroki</button>
+        </div>
+
+        <!-- FORMULARZ: WAGA -->
         <div id="subform-waga" class="card sub-form">
             <button class="btn-back" onclick="closeWpisSubForm()">← Powrót</button>
             <h2>⚖️ Zapisz Wagę</h2>
@@ -242,10 +279,17 @@
     <!-- OPCJE -->
     <div id="page-settings" class="page">
         <div class="card">
-            <h2>⚙️ Ustawienia</h2>
+            <h2>⚙️ Cele Dziennikowe</h2>
             <label>Dzienny cel kalorii (kcal)</label>
             <input type="number" id="set-target" placeholder="2000">
-            <button class="btn btn-sec" onclick="saveManualTarget()">Zapisz Cel Ręcznie</button>
+
+            <label>Dzienny cel białka (g)</label>
+            <input type="number" id="set-target-protein" placeholder="120">
+
+            <label>Dzienny cel kroków</label>
+            <input type="number" id="set-target-steps" placeholder="10000">
+
+            <button class="btn btn-sec" onclick="saveManualTargets()">Zapisz Cele</button>
         </div>
         <div class="card">
             <h2>📤 Eksport i Przekazywanie</h2>
@@ -272,6 +316,9 @@
 
             <label>Zegarek / Spalone (kcal)</label>
             <input type="number" id="edit-watch">
+
+            <label>Kroki</label>
+            <input type="number" id="edit-steps">
 
             <label>Białko (g)</label>
             <input type="number" id="edit-p">
@@ -323,12 +370,14 @@
 
         let currentUser = null;
 
-        window.db = { target: 2000, presets: [], days: {} };
+        window.db = { target: 2000, targetProtein: 120, targetSteps: 10000, presets: [], days: {} };
         try {
             const saved = localStorage.getItem('fitTrackerData');
             if (saved) window.db = JSON.parse(saved);
             if (!window.db.presets) window.db.presets = [];
             if (!window.db.days) window.db.days = {};
+            if (!window.db.targetProtein) window.db.targetProtein = 120;
+            if (!window.db.targetSteps) window.db.targetSteps = 10000;
         } catch(e) { console.error(e); }
 
         window.todayKey = new Date().toISOString().split('T')[0];
@@ -371,6 +420,8 @@
 
                 if (docSnap.exists()) {
                     window.db = docSnap.data();
+                    if (!window.db.targetProtein) window.db.targetProtein = 120;
+                    if (!window.db.targetSteps) window.db.targetSteps = 10000;
                     localStorage.setItem('fitTrackerData', JSON.stringify(window.db));
                 } else {
                     await setDoc(userDocRef, window.db);
@@ -392,6 +443,11 @@
             if(pageId === 'add') { window.closeWpisSubForm(); window.renderPresets(); }
             if(pageId === 'stats') { window.renderChart(); window.calcAverages(); window.renderHistory(); }
             if(pageId === 'panel') { window.renderMacroChart(); window.updateDashboard(); }
+            if(pageId === 'settings') {
+                document.getElementById('set-target').value = window.db.target || 2000;
+                document.getElementById('set-target-protein').value = window.db.targetProtein || 120;
+                document.getElementById('set-target-steps').value = window.db.targetSteps || 10000;
+            }
         };
 
         window.openWpisSubForm = function(type) {
@@ -413,14 +469,14 @@
         };
 
         window.addWater = function(ml) {
-            if (!window.db.days[window.todayKey]) window.db.days[window.todayKey] = { kcal: 0, p: 0, f: 0, c: 0, watch: 0, weight: 0, weightTime: '', water: 0, comment: '' };
+            if (!window.db.days[window.todayKey]) window.db.days[window.todayKey] = { kcal: 0, p: 0, f: 0, c: 0, watch: 0, weight: 0, weightTime: '', water: 0, steps: 0, comment: '' };
             window.db.days[window.todayKey].water = (window.db.days[window.todayKey].water || 0) + ml;
             window.syncDb();
             window.updateDashboard();
         };
 
         window.saveWpisPart = function(type) {
-            if (!window.db.days[window.todayKey]) window.db.days[window.todayKey] = { kcal: 0, p: 0, f: 0, c: 0, watch: 0, weight: 0, weightTime: '', water: 0, comment: '' };
+            if (!window.db.days[window.todayKey]) window.db.days[window.todayKey] = { kcal: 0, p: 0, f: 0, c: 0, watch: 0, weight: 0, weightTime: '', water: 0, steps: 0, comment: '' };
             const current = window.db.days[window.todayKey];
 
             if (type === 'posilki') {
@@ -435,6 +491,10 @@
                 document.getElementById('inp-f').value = '';
                 document.getElementById('inp-c').value = '';
             } 
+            else if (type === 'kroki') {
+                current.steps = parseInt(document.getElementById('inp-steps').value) || current.steps;
+                document.getElementById('inp-steps').value = '';
+            }
             else if (type === 'waga') { 
                 current.weight = parseFloat(document.getElementById('inp-weight').value) || current.weight;
                 current.weightTime = document.getElementById('inp-weight-time').value || current.weightTime;
@@ -490,8 +550,8 @@
             checkDate.setDate(checkDate.getDate() - 1);
             let yesterdayStr = checkDate.toISOString().split('T')[0];
 
-            let isTodayActive = window.db.days[todayStr] && (window.db.days[todayStr].kcal > 0 || window.db.days[todayStr].weight > 0 || window.db.days[todayStr].water > 0);
-            let isYesterdayActive = window.db.days[yesterdayStr] && (window.db.days[yesterdayStr].kcal > 0 || window.db.days[yesterdayStr].weight > 0 || window.db.days[yesterdayStr].water > 0);
+            let isTodayActive = window.db.days[todayStr] && (window.db.days[todayStr].kcal > 0 || window.db.days[todayStr].weight > 0 || window.db.days[todayStr].water > 0 || window.db.days[todayStr].steps > 0);
+            let isYesterdayActive = window.db.days[yesterdayStr] && (window.db.days[yesterdayStr].kcal > 0 || window.db.days[yesterdayStr].weight > 0 || window.db.days[yesterdayStr].water > 0 || window.db.days[yesterdayStr].steps > 0);
 
             if (!isTodayActive && !isYesterdayActive) {
                 document.getElementById('streak-box').innerText = `🔥 Seria: 0 dni (Uzupełnij dzisiaj wpis!)`;
@@ -504,7 +564,7 @@
                 let dateStr = currentDate.toISOString().split('T')[0];
                 let dayData = window.db.days[dateStr];
 
-                if (dayData && (dayData.kcal > 0 || dayData.weight > 0 || dayData.water > 0)) {
+                if (dayData && (dayData.kcal > 0 || dayData.weight > 0 || dayData.water > 0 || dayData.steps > 0)) {
                     streak++;
                     currentDate.setDate(currentDate.getDate() - 1);
                 } else {
@@ -520,7 +580,7 @@
         };
 
         window.updateDashboard = function() {
-            const today = window.db.days[window.todayKey] || { kcal: 0, p: 0, f: 0, c: 0, watch: 0, water: 0 };
+            const today = window.db.days[window.todayKey] || { kcal: 0, p: 0, f: 0, c: 0, watch: 0, water: 0, steps: 0 };
             document.getElementById('disp-kcal').innerText = today.kcal || 0;
             document.getElementById('disp-watch').innerText = today.watch || 0;
             document.getElementById('disp-target').innerText = window.db.target || 2000;
@@ -533,11 +593,23 @@
             document.getElementById('disp-f').innerText = (today.f || 0) + 'g';
             document.getElementById('disp-c').innerText = (today.c || 0) + 'g';
 
-            const target = window.db.target || 2000;
-            let percent = Math.round(((today.kcal || 0) / target) * 100) || 0;
+            // PASEK KALORII
+            const targetKcal = window.db.target || 2000;
+            let percentKcal = Math.round(((today.kcal || 0) / targetKcal) * 100) || 0;
+            document.getElementById('kcal-progress').style.width = Math.min(percentKcal, 100) + '%';
+            document.getElementById('kcal-progress-text').innerText = `${today.kcal || 0} / ${targetKcal} kcal (${percentKcal}%)`;
 
-            document.getElementById('kcal-progress').style.width = Math.min(percent, 100) + '%';
-            document.getElementById('kcal-progress-text').innerText = `${today.kcal || 0} / ${target} kcal (${percent}%)`;
+            // PASEK BIAŁKA
+            const targetProtein = window.db.targetProtein || 120;
+            let percentProtein = Math.round(((today.p || 0) / targetProtein) * 100) || 0;
+            document.getElementById('protein-progress').style.width = Math.min(percentProtein, 100) + '%';
+            document.getElementById('protein-progress-text').innerText = `${today.p || 0} / ${targetProtein} g (${percentProtein}%)`;
+
+            // PASEK KROKÓW
+            const targetSteps = window.db.targetSteps || 10000;
+            let percentSteps = Math.round(((today.steps || 0) / targetSteps) * 100) || 0;
+            document.getElementById('steps-progress').style.width = Math.min(percentSteps, 100) + '%';
+            document.getElementById('steps-progress-text').innerText = `${today.steps || 0} / ${targetSteps} kroków (${percentSteps}%)`;
 
             window.renderMacroChart();
             window.calcStreak();
@@ -615,7 +687,7 @@
                             <strong>📅 ${date}</strong>
                             <button class="btn btn-sec btn-sm" onclick="openEditModal('${date}')">✏️ Edytuj</button>
                         </div>
-                        Waga: ${weightDisplay} | Woda: ${item.water || 0} ml<br>
+                        Waga: ${weightDisplay} | Woda: ${item.water || 0} ml | Kroki: ${item.steps || 0}<br>
                         🥑 Kalorie: ${item.kcal || 0} kcal | 🔥 Zegarek: ${item.watch || 0} kcal<br>
                         🥩 B: ${item.p || 0}g | T: ${item.f || 0}g | W: ${item.c || 0}g
                         ${commentDisplay}
@@ -631,6 +703,7 @@
             document.getElementById('edit-weight-time').value = item.weightTime || '';
             document.getElementById('edit-kcal').value = item.kcal || 0;
             document.getElementById('edit-watch').value = item.watch || 0;
+            document.getElementById('edit-steps').value = item.steps || 0;
             document.getElementById('edit-p').value = item.p || 0;
             document.getElementById('edit-f').value = item.f || 0;
             document.getElementById('edit-c').value = item.c || 0;
@@ -652,6 +725,7 @@
             window.db.days[dateKey].weightTime = document.getElementById('edit-weight-time').value || '';
             window.db.days[dateKey].kcal = parseInt(document.getElementById('edit-kcal').value) || 0;
             window.db.days[dateKey].watch = parseInt(document.getElementById('edit-watch').value) || 0;
+            window.db.days[dateKey].steps = parseInt(document.getElementById('edit-steps').value) || 0;
             window.db.days[dateKey].p = parseInt(document.getElementById('edit-p').value) || 0;
             window.db.days[dateKey].f = parseInt(document.getElementById('edit-f').value) || 0;
             window.db.days[dateKey].c = parseInt(document.getElementById('edit-c').value) || 0;
@@ -666,10 +740,12 @@
             alert('Zapisano zmiany w historii!');
         };
 
-        window.saveManualTarget = function() {
+        window.saveManualTargets = function() {
             window.db.target = parseInt(document.getElementById('set-target').value) || 2000;
+            window.db.targetProtein = parseInt(document.getElementById('set-target-protein').value) || 120;
+            window.db.targetSteps = parseInt(document.getElementById('set-target-steps').value) || 10000;
             window.syncDb();
-            alert('Cel zapisany!');
+            alert('Cele zapisane!');
             window.updateDashboard();
         };
 
@@ -699,6 +775,8 @@
                     const parsed = JSON.parse(jsonText);
                     if (parsed && parsed.days) {
                         window.db = parsed;
+                        if (!window.db.targetProtein) window.db.targetProtein = 120;
+                        if (!window.db.targetSteps) window.db.targetSteps = 10000;
                         window.syncDb();
                         window.updateDashboard();
                         alert("Sukces! Dane zostały wczytane i zapisane.");
