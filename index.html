@@ -1,272 +1,654 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Moje Makro</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      margin: 0;
-      padding: 16px;
-      background-color: #121212;
-      color: #ffffff;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    button {
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-weight: bold;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    button:disabled {
-      background-color: #555;
-    }
-    .user-info {
-      font-size: 14px;
-      color: #aaa;
-      margin-bottom: 20px;
-    }
-    .card {
-      background: #1e1e1e;
-      padding: 16px;
-      border-radius: 12px;
-      margin-bottom: 16px;
-    }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      border-radius: 6px;
-      border: 1px solid #333;
-      background: #2a2a2a;
-      color: white;
-      box-sizing: border-box;
-    }
-    ul {
-      list-style-type: none;
-      padding: 0;
-    }
-    li {
-      background: #2a2a2a;
-      margin: 8px 0;
-      padding: 12px;
-      border-radius: 8px;
-      display: flex;
-      justify-content: space-between;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dziennik Diety & Fit Pro</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #121212;
+            --card: #1e1e1e;
+            --accent: #4caf50;
+            --accent-blue: #4285f4;
+            --accent-water: #2196f3;
+            --text: #ffffff;
+            --subtext: #aaaaaa;
+            --border: #333333;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: var(--bg); color: var(--text); padding-bottom: 85px; }
+        
+        header { background: var(--card); padding: 15px; text-align: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; }
+        
+        nav { 
+            position: fixed; bottom: 0; left: 0; right: 0; 
+            background: #121212; display: flex; justify-content: space-between; 
+            align-items: center; padding: 8px 10px 12px 10px; gap: 8px;
+            border-top: 1px solid var(--border); z-index: 100;
+        }
+        nav button { 
+            flex: 1; background: #1e1e1e; border: 1px solid var(--border); 
+            border-radius: 10px; color: var(--subtext); font-size: 11px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; padding: 8px 0; transition: all 0.2s ease;
+        }
+        nav button.active { color: var(--accent); border-color: var(--accent); background: #252525; font-weight: bold; }
+        nav button span { font-size: 18px; margin-bottom: 3px; display: block; }
+
+        .page { display: none; padding: 15px; }
+        .page.active { display: block; }
+        .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--border); }
+        h2 { font-size: 16px; margin-bottom: 12px; color: var(--accent); }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        .tiles-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .tile-card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 20px 15px; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; gap: 8px; cursor: pointer;
+        }
+        .tile-icon { font-size: 26px; }
+        .tile-title { font-size: 13px; font-weight: bold; color: var(--text); }
+        
+        .sub-form { display: none; }
+        .btn-back { background: none; border: none; color: var(--accent); font-weight: bold; cursor: pointer; margin-bottom: 15px; display: flex; align-items: center; gap: 5px; font-size: 13px; }
+
+        .progress-container {
+            background: #2a2a2a; border-radius: 10px; height: 20px; width: 100%;
+            overflow: hidden; margin-top: 8px; border: 1px solid var(--border); position: relative;
+        }
+        .progress-bar { background: linear-gradient(90deg, #4caf50, #81c784); height: 100%; width: 0%; transition: width 0.4s ease; }
+        .progress-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 11px; font-weight: bold; color: #fff; text-shadow: 0 0 4px rgba(0,0,0,0.8); }
+
+        label { font-size: 12px; color: var(--subtext); display: block; margin-top: 8px; }
+        input, textarea, select { width: 100%; padding: 10px; margin-top: 4px; background: #2a2a2a; border: 1px solid var(--border); color: #fff; border-radius: 8px; font-size: 14px; }
+        button.btn { width: 100%; padding: 12px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-weight: bold; margin-top: 15px; cursor: pointer; }
+        button.btn-sec { background: #333; margin-top: 8px; color: #fff; border: 1px solid var(--border); }
+        button.btn-ai { background: var(--accent-blue); margin-top: 8px; color: #fff; border: none; }
+        button.btn-water { background: var(--accent-water); margin-top: 8px; color: #fff; }
+        button.btn-sm { width: auto; padding: 4px 10px; font-size: 11px; margin-top: 5px; cursor: pointer; }
+
+        .stat-box { text-align: center; background: #252525; padding: 10px; border-radius: 8px; }
+        .stat-num { font-size: 18px; font-weight: bold; }
+        .stat-lbl { font-size: 10px; color: var(--subtext); }
+        .history-item { background: #252525; padding: 12px; border-radius: 8px; margin-bottom: 8px; font-size: 12px; position: relative; }
+        
+        .water-bar { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 12px; border-radius: 8px; margin-top: 10px; }
+        .preset-btn { background: #333; border: 1px solid var(--border); color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; margin-right: 5px; margin-top: 5px; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; padding: 20px; align-items: center; justify-content: center; }
+        .modal-content { background: var(--card); padding: 20px; border-radius: 12px; width: 100%; max-width: 400px; border: 1px solid var(--border); max-height: 90vh; overflow-y: auto; }
+        
+        .btn-auth { background: #4caf50; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; }
+    </style>
 </head>
 <body>
 
-  <div class="header">
-    <h1>Moje Makro</h1>
-    <button id="loginBtn">Zaloguj przez Google</button>
-  </div>
+    <header>
+        <h1 style="font-size:18px;">🥑 FitTracker Pro</h1>
+        <button id="loginBtn" class="btn-auth">Zaloguj przez Google</button>
+    </header>
 
-  <div id="userStatus" class="user-info">Niezalogowano</div>
+    <div id="userStatus" style="font-size:11px; color: var(--subtext); text-align:center; padding: 4px; background: #1a1a1a;">Niezalogowano (dane lokalne)</div>
 
-  <!-- Sekcja dodawania posiłku -->
-  <div class="card">
-    <h3>Dodaj posiłek</h3>
-    <input type="text" id="mealName" placeholder="Nazwa posiłku (np. Owsianka)" />
-    <input type="number" id="mealKcal" placeholder="Kalorie (kcal)" />
-    <input type="number" id="mealProtein" placeholder="Białko (g)" />
-    <input type="number" id="mealCarbs" placeholder="Węglowodany (g)" />
-    <input type="number" id="mealFat" placeholder="Tłuszcze (g)" />
-    <button id="addMealBtn" style="width: 100%; margin-top: 10px;">Dodaj do chmury</button>
-  </div>
+    <!-- DZIEŃ -->
+    <div id="page-panel" class="page active">
+        <div class="card">
+            <h2>🥑 Podsumowanie Dnia</h2>
+            <div class="grid">
+                <div class="stat-box"><div class="stat-num" id="disp-kcal">0</div><div class="stat-lbl">Zjedzone kcal</div></div>
+                <div class="stat-box"><div class="stat-num" id="disp-watch">0</div><div class="stat-lbl">🔥 Spalone (Zegarek)</div></div>
+                <div class="stat-box"><div class="stat-num" id="disp-target">0</div><div class="stat-lbl">Cel kcal</div></div>
+                <div class="stat-box"><div class="stat-num" id="disp-balance">0</div><div class="stat-lbl">📉 Bilans netto</div></div>
+            </div>
 
-  <!-- Lista posiłków z chmury -->
-  <div class="card">
-    <h3>Twoje posiłki</h3>
-    <ul id="mealsList"></ul>
-  </div>
+            <div style="margin-top: 12px;">
+                <label style="margin-top: 0; font-weight: bold; color: #fff;">Cel kalorii:</label>
+                <div class="progress-container">
+                    <div class="progress-bar" id="kcal-progress"></div>
+                    <div class="progress-text" id="kcal-progress-text">0%</div>
+                </div>
+            </div>
+        </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { 
-      getAuth, 
-      signInWithPopup, 
-      GoogleAuthProvider, 
-      onAuthStateChanged,
-      signOut
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { 
-      getFirestore, 
-      collection, 
-      addDoc, 
-      getDocs, 
-      query, 
-      where 
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        <!-- NAWODNIENIE -->
+        <div class="card">
+            <h2>💧 Licznik Wody</h2>
+            <div class="water-bar">
+                <div>
+                    <span style="font-size: 20px; font-weight: bold;" id="disp-water">0</span> <span style="font-size: 12px; color: var(--subtext);">/ 2500 ml</span>
+                </div>
+                <button class="btn btn-water" style="width: auto; margin:0; padding: 8px 15px;" onclick="addWater(250)">+250 ml 🥤</button>
+            </div>
+        </div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAbfhomXpRQjp5Am3C2tqijyqfjkuLgoNA",
-      authDomain: "moje-makro.firebaseapp.com",
-      projectId: "moje-makro",
-      storageBucket: "moje-makro.firebasestorage.app",
-      messagingSenderId: "217567728597",
-      appId: "1:217567728597:web:efb47360c599b18065635c",
-      measurementId: "G-H6HMQF9FYB"
-    };
+        <!-- MAKRO PIE CHART -->
+        <div class="card">
+            <h2>🥩 Rozkład Makroskładników (%)</h2>
+            <div style="max-width: 200px; margin: 0 auto;">
+                <canvas id="macroChart"></canvas>
+            </div>
+            <div class="grid" style="margin-top: 15px;">
+                <div class="stat-box"><div class="stat-num" id="disp-p">0g</div><div class="stat-lbl">Białko</div></div>
+                <div class="stat-box"><div class="stat-num" id="disp-f">0g</div><div class="stat-lbl">Tłuszcze</div></div>
+                <div class="stat-box" style="grid-column: span 2"><div class="stat-num" id="disp-c">0g</div><div class="stat-lbl">Węglowodany</div></div>
+            </div>
+        </div>
+    </div>
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    <!-- WPIS -->
+    <div id="page-add" class="page">
+        <div id="wpis-tiles" class="tiles-grid">
+            <div class="tile-card" onclick="openWpisSubForm('posilki')">
+                <span class="tile-icon">🍽️</span>
+                <span class="tile-title">Posiłek / Kalkulator</span>
+            </div>
+            <div class="tile-card" onclick="openWpisSubForm('waga')">
+                <span class="tile-icon">⚖️</span>
+                <span class="tile-title">Waga</span>
+            </div>
+            <div class="tile-card" onclick="openWpisSubForm('spalone')">
+                <span class="tile-icon">🔥</span>
+                <span class="tile-title">Spalone kcal</span>
+            </div>
+            <div class="tile-card" onclick="openWpisSubForm('komentarze')">
+                <span class="tile-icon">📝</span>
+                <span class="tile-title">Komentarze</span>
+            </div>
+        </div>
 
-    let currentUser = null;
+        <!-- FORMULARZ: POSIŁKI & KALKULATOR -->
+        <div id="subform-posilki" class="card sub-form">
+            <button class="btn-back" onclick="closeWpisSubForm()">← Powrót do kafelków</button>
+            <h2>🍽️ Dodaj Posiłek</h2>
+            
+            <div id="presets-wrapper" style="margin-bottom: 10px;">
+                <label>Szybkie szablony:</label>
+                <div id="presets-list"></div>
+            </div>
 
-    const loginBtn = document.getElementById('loginBtn');
-    const userStatus = document.getElementById('userStatus');
-    const addMealBtn = document.getElementById('addMealBtn');
-    const mealsList = document.getElementById('mealsList');
+            <label>Nazwa posiłku / dania</label>
+            <input type="text" id="inp-meal-name" placeholder="np. Obiadek z pulpetami">
 
-    // Obsługa Przysku Logowania
-    loginBtn.addEventListener('click', async () => {
-      if (currentUser) {
-        await signOut(auth);
-      } else {
-        const provider = new GoogleAuthProvider();
+            <label>Kalorie (kcal)</label>
+            <input type="number" id="inp-kcal" placeholder="np. 550">
+
+            <label style="margin-top: 10px;">🥩 Makro (g): Białko / Tłuszcz / Węgle</label>
+            <div style="display: flex; gap: 5px;">
+                <input type="number" id="inp-p" placeholder="B">
+                <input type="number" id="inp-f" placeholder="T">
+                <input type="number" id="inp-c" placeholder="W">
+            </div>
+
+            <button class="btn" onclick="saveWpisPart('posilki')">Zapisz do Dziennika</button>
+            <button class="btn btn-sec" onclick="saveAsPreset()">★ Zapisz jako Szablon</button>
+        </div>
+
+        <!-- FORMULARZ: WAGA Z GODZINĄ -->
+        <div id="subform-waga" class="card sub-form">
+            <button class="btn-back" onclick="closeWpisSubForm()">← Powrót</button>
+            <h2>⚖️ Zapisz Wagę</h2>
+            <label>Waga (kg)</label>
+            <input type="number" step="0.1" id="inp-weight" placeholder="np. 75.5">
+            
+            <label>Godzina pomiaru</label>
+            <input type="time" id="inp-weight-time">
+
+            <button class="btn" onclick="saveWpisPart('waga')">Zapisz Wagę</button>
+        </div>
+
+        <div id="subform-spalone" class="card sub-form">
+            <button class="btn-back" onclick="closeWpisSubForm()">← Powrót</button>
+            <h2>🔥 Spalone Kalorie</h2>
+            <label>Zegarek (kcal)</label>
+            <input type="number" id="inp-watch" placeholder="np. 2500">
+            <button class="btn" onclick="saveWpisPart('spalone')">Zapisz Spalone Kcal</button>
+        </div>
+
+        <div id="subform-komentarze" class="card sub-form">
+            <button class="btn-back" onclick="closeWpisSubForm()">← Powrót</button>
+            <h2>📝 Uwagi</h2>
+            <textarea id="inp-comment" rows="4" placeholder="Opisz swoje samopoczucie..."></textarea>
+            <button class="btn" onclick="saveWpisPart('komentarze')">Zapisz Uwagi</button>
+        </div>
+    </div>
+
+    <!-- STATYSTYKI -->
+    <div id="page-stats" class="page">
+        <div class="card">
+            <h2>📊 Średnia 7-dniowa</h2>
+            <div class="grid">
+                <div class="stat-box"><div class="stat-num" id="avg-weight">-- kg</div><div class="stat-lbl">Śr. Waga (7 dni)</div></div>
+                <div class="stat-box"><div class="stat-num" id="avg-kcal">-- kcal</div><div class="stat-lbl">Śr. Kalorie (7 dni)</div></div>
+            </div>
+        </div>
+        <div class="card">
+            <h2>📈 Postępy Wagi</h2>
+            <canvas id="weightChart" style="width:100%; max-height:200px;"></canvas>
+        </div>
+        <div class="card">
+            <h2>📜 Historia Dni</h2>
+            <div id="history-list"></div>
+        </div>
+    </div>
+
+    <!-- OPCJE -->
+    <div id="page-settings" class="page">
+        <div class="card">
+            <h2>⚙️ Ustawienia</h2>
+            <label>Dzienny cel kalorii (kcal)</label>
+            <input type="number" id="set-target" placeholder="2000">
+            <button class="btn btn-sec" onclick="saveManualTarget()">Zapisz Cel Ręcznie</button>
+        </div>
+        <div class="card">
+            <h2>📤 Eksport i Przekazywanie</h2>
+            <button class="btn btn-ai" onclick="copyDataForAI()">📋 Kopiuj dane dla AI</button>
+            <button class="btn btn-sec" onclick="exportData()">Eksportuj dane do JSON</button>
+        </div>
+    </div>
+
+    <!-- MODAL EDYCJI HISTORII -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="edit-modal-title">✏️ Edytuj Dzień</h2>
+            <input type="hidden" id="edit-date-key">
+            
+            <label>Waga (kg)</label>
+            <input type="number" step="0.1" id="edit-weight">
+
+            <label>Godzina pomiaru wagi</label>
+            <input type="time" id="edit-weight-time">
+
+            <label>Kalorie (kcal)</label>
+            <input type="number" id="edit-kcal">
+
+            <label>Zegarek / Spalone (kcal)</label>
+            <input type="number" id="edit-watch">
+
+            <label>Białko (g)</label>
+            <input type="number" id="edit-p">
+
+            <label>Tłuszcz (g)</label>
+            <input type="number" id="edit-f">
+
+            <label>Węglowodany (g)</label>
+            <input type="number" id="edit-c">
+
+            <label>Woda (ml)</label>
+            <input type="number" id="edit-water">
+
+            <label>Komentarz / Uwagi</label>
+            <textarea id="edit-comment" rows="3"></textarea>
+
+            <button class="btn" onclick="saveHistoryEdit()">Zapisz Zmiany</button>
+            <button class="btn btn-sec" onclick="closeEditModal()">Anuluj</button>
+        </div>
+    </div>
+
+    <!-- NAWIGACJA -->
+    <nav>
+        <button onclick="showPage('panel')" id="nav-panel" class="active"><span>🥑</span>Dzień</button>
+        <button onclick="showPage('add')" id="nav-add"><span>➕</span>Wpis</button>
+        <button onclick="showPage('stats')" id="nav-stats"><span>📈</span>Wykresy</button>
+        <button onclick="showPage('settings')" id="nav-settings"><span>⚙️</span>Opcje</button>
+    </nav>
+
+    <!-- FIREBASE MODULE & LOGIKA ZAPISU -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbfhomXpRQjp5Am3C2tqijyqfjkuLgoNA",
+            authDomain: "moje-makro.firebaseapp.com",
+            projectId: "moje-makro",
+            storageBucket: "moje-makro.firebasestorage.app",
+            messagingSenderId: "217567728597",
+            appId: "1:217567728597:web:efb47360c599b18065635c",
+            measurementId: "G-H6HMQF9FYB"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const dbFirebase = getFirestore(app);
+
+        let currentUser = null;
+
+        // Inicjalizacja db lokalnego
+        window.db = { target: 2000, presets: [], days: {} };
         try {
-          await signInWithPopup(auth, provider);
-        } catch (err) {
-          console.error("Błąd logowania:", err);
-        }
-      }
-    });
+            const saved = localStorage.getItem('fitTrackerData');
+            if (saved) window.db = JSON.parse(saved);
+            if (!window.db.presets) window.db.presets = [];
+            if (!window.db.days) window.db.days = {};
+        } catch(e) { console.error(e); }
 
-    // Śledzenie stanu zalogowania
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        currentUser = user;
-        loginBtn.textContent = "Wyloguj";
-        userStatus.textContent = `Zalogowano jako: ${user.displayName || user.email}`;
-        
-        await migrateLocalStorageToFirebase();
-        await renderMeals();
-      } else {
-        currentUser = null;
-        loginBtn.textContent = "Zaloguj przez Google";
-        userStatus.textContent = "Niezalogowano";
-        mealsList.innerHTML = "<li>Zaloguj się, aby zobaczyć swoje posiłki.</li>";
-      }
-    });
+        window.todayKey = new Date().toISOString().split('T')[0];
 
-    // Zapisywanie nowego posiłku bezpośrednio do Firebase
-    addMealBtn.addEventListener('click', async () => {
-      if (!currentUser) {
-        alert("Musisz się zalogować, aby dodać posiłek!");
-        return;
-      }
-
-      const name = document.getElementById('mealName').value;
-      const kcal = document.getElementById('mealKcal').value;
-      const protein = document.getElementById('mealProtein').value;
-      const carbs = document.getElementById('mealCarbs').value;
-      const fat = document.getElementById('mealFat').value;
-
-      if (!name) {
-        alert("Podaj nazwę posiłku!");
-        return;
-      }
-
-      const mealData = {
-        name,
-        kcal: Number(kcal) || 0,
-        protein: Number(protein) || 0,
-        carbs: Number(carbs) || 0,
-        fat: Number(fat) || 0,
-        userId: currentUser.uid,
-        createdAt: new Date().toISOString()
-      };
-
-      try {
-        await addDoc(collection(db, "meals"), mealData);
-        
-        // Wyczyszczenie pól
-        document.getElementById('mealName').value = '';
-        document.getElementById('mealKcal').value = '';
-        document.getElementById('mealProtein').value = '';
-        document.getElementById('mealCarbs').value = '';
-        document.getElementById('mealFat').value = '';
-
-        // Odświeżenie listy posiłków
-        await renderMeals();
-      } catch (e) {
-        console.error("Błąd zapisu:", e);
-      }
-    });
-
-    // Wyświetlanie posiłków z bazy Firebase
-    async function renderMeals() {
-      if (!currentUser) return;
-
-      mealsList.innerHTML = "<li>Ładowanie posiłków...</li>";
-
-      try {
-        const q = query(collection(db, "meals"), where("userId", "==", currentUser.uid));
-        const querySnapshot = await getDocs(q);
-        
-        mealsList.innerHTML = "";
-
-        if (querySnapshot.empty) {
-          mealsList.innerHTML = "<li>Brak zapisanych posiłków.</li>";
-          return;
-        }
-
-        querySnapshot.forEach((doc) => {
-          const meal = doc.data();
-          const li = document.createElement('li');
-          li.innerHTML = `
-            <span><strong>${meal.name}</strong> (${meal.kcal} kcal)</span>
-            <small>B: ${meal.protein}g | W: ${meal.carbs}g | T: ${meal.fat}g</small>
-          `;
-          mealsList.appendChild(li);
-        });
-      } catch (e) {
-        console.error("Błąd pobierania:", e);
-      }
-    }
-
-    // Automatyczne przeniesienie starych danych z localStorage do bazy po zalogowaniu
-    async function migrateLocalStorageToFirebase() {
-      if (!currentUser) return;
-      const possibleKeys = ['dieta', 'meals', 'my_macro_meals', 'posilki'];
-      for (const key of possibleKeys) {
-        const localData = localStorage.getItem(key);
-        if (localData) {
-          try {
-            const meals = JSON.parse(localData);
-            if (Array.isArray(meals) && meals.length > 0) {
-              for (const meal of meals) {
-                await addDoc(collection(db, "meals"), {
-                  ...meal,
-                  userId: currentUser.uid,
-                  createdAt: meal.createdAt || new Date().toISOString()
-                });
-              }
-              localStorage.removeItem(key);
+        // Funkcje Zpisu
+        window.syncDb = async function() {
+            localStorage.setItem('fitTrackerData', JSON.stringify(window.db));
+            if (currentUser) {
+                try {
+                    await setDoc(doc(dbFirebase, "users", currentUser.uid), window.db);
+                } catch(e) {
+                    console.error("Błąd synchronizacji z chmurą:", e);
+                }
             }
-          } catch (e) {
-            console.error("Błąd migracji:", e);
-          }
+        };
+
+        const loginBtn = document.getElementById('loginBtn');
+        const userStatus = document.getElementById('userStatus');
+
+        loginBtn.addEventListener('click', async () => {
+            if (currentUser) {
+                await signOut(auth);
+            } else {
+                const provider = new GoogleAuthProvider();
+                try {
+                    await signInWithPopup(auth, provider);
+                } catch (err) {
+                    console.error("Błąd logowania:", err);
+                }
+            }
+        });
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                loginBtn.textContent = "Wyloguj";
+                userStatus.textContent = `Zalogowano jako: ${user.displayName || user.email} (Chmura aktywna)`;
+
+                // Weryfikacja danych w Firebase
+                const userDocRef = doc(dbFirebase, "users", user.uid);
+                const docSnap = await getDoc(userDocRef);
+
+                if (docSnap.exists()) {
+                    window.db = docSnap.data();
+                    localStorage.setItem('fitTrackerData', JSON.stringify(window.db));
+                } else {
+                    // Migracja danych lokalnych przy pierwszym logowaniu
+                    await setDoc(userDocRef, window.db);
+                }
+                window.updateDashboard();
+            } else {
+                currentUser = null;
+                loginBtn.textContent = "Zaloguj przez Google";
+                userStatus.textContent = "Niezalogowano (dane lokalne)";
+            }
+        });
+
+        window.showPage = function(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+            document.getElementById('page-' + pageId).classList.add('active');
+            document.getElementById('nav-' + pageId).classList.add('active');
+            
+            if(pageId === 'add') { window.closeWpisSubForm(); window.renderPresets(); }
+            if(pageId === 'stats') { window.renderChart(); window.calcAverages(); window.renderHistory(); }
+            if(pageId === 'panel') { window.renderMacroChart(); window.updateDashboard(); }
+        };
+
+        window.openWpisSubForm = function(type) {
+            document.getElementById('wpis-tiles').style.display = 'none';
+            document.querySelectorAll('#page-add .sub-form').forEach(f => f.style.display = 'none');
+            document.getElementById('subform-' + type).style.display = 'block';
+
+            if (type === 'waga') {
+                const now = new Date();
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                document.getElementById('inp-weight-time').value = `${hours}:${minutes}`;
+            }
+        };
+
+        window.closeWpisSubForm = function() {
+            document.querySelectorAll('#page-add .sub-form').forEach(f => f.style.display = 'none');
+            document.getElementById('wpis-tiles').style.display = 'grid';
+        };
+
+        window.addWater = function(ml) {
+            if (!window.db.days[window.todayKey]) window.db.days[window.todayKey] = { kcal: 0, p: 0, f: 0, c: 0, watch: 0, weight: 0, weightTime: '', water: 0, comment: '' };
+            window.db.days[window.todayKey].water = (window.db.days[window.todayKey].water || 0) + ml;
+            window.syncDb();
+            window.updateDashboard();
+        };
+
+        window.saveWpisPart = function(type) {
+            if (!window.db.days[window.todayKey]) window.db.days[window.todayKey] = { kcal: 0, p: 0, f: 0, c: 0, watch: 0, weight: 0, weightTime: '', water: 0, comment: '' };
+            const current = window.db.days[window.todayKey];
+
+            if (type === 'posilki') {
+                current.kcal = (current.kcal || 0) + (parseInt(document.getElementById('inp-kcal').value) || 0);
+                current.p = (current.p || 0) + (parseInt(document.getElementById('inp-p').value) || 0);
+                current.f = (current.f || 0) + (parseInt(document.getElementById('inp-f').value) || 0);
+                current.c = (current.c || 0) + (parseInt(document.getElementById('inp-c').value) || 0);
+
+                document.getElementById('inp-meal-name').value = '';
+                document.getElementById('inp-kcal').value = '';
+                document.getElementById('inp-p').value = '';
+                document.getElementById('inp-f').value = '';
+                document.getElementById('inp-c').value = '';
+            } 
+            else if (type === 'waga') { 
+                current.weight = parseFloat(document.getElementById('inp-weight').value) || current.weight;
+                current.weightTime = document.getElementById('inp-weight-time').value || current.weightTime;
+            } 
+            else if (type === 'spalone') { current.watch = parseInt(document.getElementById('inp-watch').value) || current.watch; } 
+            else if (type === 'komentarze') { current.comment = document.getElementById('inp-comment').value || current.comment; }
+
+            window.syncDb();
+            alert('Zapisano!');
+            window.updateDashboard();
+            window.closeWpisSubForm();
+            window.showPage('panel');
+        };
+
+        window.saveAsPreset = function() {
+            const name = document.getElementById('inp-meal-name').value || 'Posiłek';
+            const kcal = parseInt(document.getElementById('inp-kcal').value) || 0;
+            const p = parseInt(document.getElementById('inp-p').value) || 0;
+            const f = parseInt(document.getElementById('inp-f').value) || 0;
+            const c = parseInt(document.getElementById('inp-c').value) || 0;
+
+            window.db.presets.push({ name, kcal, p, f, c });
+            window.syncDb();
+            alert('Dodano do szablonów!');
+            window.renderPresets();
+        };
+
+        window.loadPreset = function(idx) {
+            const item = window.db.presets[idx];
+            if(item) {
+                document.getElementById('inp-meal-name').value = item.name;
+                document.getElementById('inp-kcal').value = item.kcal;
+                document.getElementById('inp-p').value = item.p;
+                document.getElementById('inp-f').value = item.f;
+                document.getElementById('inp-c').value = item.c;
+            }
+        };
+
+        window.renderPresets = function() {
+            const container = document.getElementById('presets-list');
+            container.innerHTML = '';
+            window.db.presets.forEach((item, index) => {
+                container.innerHTML += `<button class="preset-btn" onclick="loadPreset(${index})">${item.name} (${item.kcal} kcal)</button>`;
+            });
+        };
+
+        window.updateDashboard = function() {
+            const today = window.db.days[window.todayKey] || { kcal: 0, p: 0, f: 0, c: 0, watch: 0, water: 0 };
+            document.getElementById('disp-kcal').innerText = today.kcal || 0;
+            document.getElementById('disp-watch').innerText = today.watch || 0;
+            document.getElementById('disp-target').innerText = window.db.target || 2000;
+            document.getElementById('disp-water').innerText = today.water || 0;
+            
+            const balance = (today.kcal || 0) - (today.watch || 0);
+            document.getElementById('disp-balance').innerText = (balance > 0 ? '+' : '') + balance;
+
+            document.getElementById('disp-p').innerText = (today.p || 0) + 'g';
+            document.getElementById('disp-f').innerText = (today.f || 0) + 'g';
+            document.getElementById('disp-c').innerText = (today.c || 0) + 'g';
+
+            const target = window.db.target || 2000;
+            let percent = Math.round(((today.kcal || 0) / target) * 100) || 0;
+
+            document.getElementById('kcal-progress').style.width = Math.min(percent, 100) + '%';
+            document.getElementById('kcal-progress-text').innerText = `${today.kcal || 0} / ${target} kcal (${percent}%)`;
+
+            window.renderMacroChart();
+        };
+
+        let macroChartInstance = null;
+        window.renderMacroChart = function() {
+            const today = window.db.days[window.todayKey] || { p: 0, f: 0, c: 0 };
+            const ctx = document.getElementById('macroChart').getContext('2d');
+            
+            if(macroChartInstance) macroChartInstance.destroy();
+            
+            macroChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Białko', 'Tłuszcze', 'Węgle'],
+                    datasets: [{
+                        data: [today.p || 0, today.f || 0, today.c || 0],
+                        backgroundColor: ['#4caf50', '#ff9800', '#2196f3']
+                    }]
+                },
+                options: { plugins: { legend: { display: false } } }
+            });
+        };
+
+        window.calcAverages = function() {
+            const dates = Object.keys(window.db.days).sort().slice(-7);
+            if(dates.length === 0) return;
+
+            let totalW = 0, countW = 0, totalK = 0;
+            dates.forEach(d => {
+                if(window.db.days[d].weight) { totalW += window.db.days[d].weight; countW++; }
+                totalK += (window.db.days[d].kcal || 0);
+            });
+
+            document.getElementById('avg-weight').innerText = countW ? (totalW / countW).toFixed(1) + ' kg' : '-- kg';
+            document.getElementById('avg-kcal').innerText = Math.round(totalK / dates.length) + ' kcal';
+        };
+
+        let chartInstance = null;
+        window.renderChart = function() {
+            const ctx = document.getElementById('weightChart').getContext('2d');
+            const dates = Object.keys(window.db.days).sort();
+            const weights = dates.map(d => window.db.days[d].weight || null);
+
+            if(chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{ label: 'Waga (kg)', data: weights, borderColor: '#4caf50', tension: 0.2, fill: false }]
+                },
+                options: { scales: { y: { beginAtZero: false } } }
+            });
+        };
+
+        window.renderHistory = function() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            Object.keys(window.db.days).sort().reverse().forEach(date => {
+                const item = window.db.days[date];
+                const weightDisplay = item.weight ? `${item.weight} kg ${item.weightTime ? '(' + item.weightTime + ')' : ''}` : '-';
+                const commentDisplay = item.comment ? `<br>💬 <em>${item.comment}</em>` : '';
+
+                list.innerHTML += `
+                    <div class="history-item">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <strong>📅 ${date}</strong>
+                            <button class="btn btn-sec btn-sm" onclick="openEditModal('${date}')">✏️ Edytuj</button>
+                        </div>
+                        Waga: ${weightDisplay} | Woda: ${item.water || 0} ml<br>
+                        🥑 Kalorie: ${item.kcal || 0} kcal | 🔥 Zegarek: ${item.watch || 0} kcal<br>
+                        🥩 B: ${item.p || 0}g | T: ${item.f || 0}g | W: ${item.c || 0}g
+                        ${commentDisplay}
+                    </div>`;
+            });
+        };
+
+        window.openEditModal = function(dateKey) {
+            const item = window.db.days[dateKey] || {};
+            document.getElementById('edit-date-key').value = dateKey;
+            document.getElementById('edit-modal-title').innerText = `✏️ Edycja: ${dateKey}`;
+            document.getElementById('edit-weight').value = item.weight || '';
+            document.getElementById('edit-weight-time').value = item.weightTime || '';
+            document.getElementById('edit-kcal').value = item.kcal || 0;
+            document.getElementById('edit-watch').value = item.watch || 0;
+            document.getElementById('edit-p').value = item.p || 0;
+            document.getElementById('edit-f').value = item.f || 0;
+            document.getElementById('edit-c').value = item.c || 0;
+            document.getElementById('edit-water').value = item.water || 0;
+            document.getElementById('edit-comment').value = item.comment || '';
+
+            document.getElementById('edit-modal').style.display = 'flex';
+        };
+
+        window.closeEditModal = function() {
+            document.getElementById('edit-modal').style.display = 'none';
+        };
+
+        window.saveHistoryEdit = function() {
+            const dateKey = document.getElementById('edit-date-key').value;
+            if (!window.db.days[dateKey]) window.db.days[dateKey] = {};
+
+            window.db.days[dateKey].weight = parseFloat(document.getElementById('edit-weight').value) || 0;
+            window.db.days[dateKey].weightTime = document.getElementById('edit-weight-time').value || '';
+            window.db.days[dateKey].kcal = parseInt(document.getElementById('edit-kcal').value) || 0;
+            window.db.days[dateKey].watch = parseInt(document.getElementById('edit-watch').value) || 0;
+            window.db.days[dateKey].p = parseInt(document.getElementById('edit-p').value) || 0;
+            window.db.days[dateKey].f = parseInt(document.getElementById('edit-f').value) || 0;
+            window.db.days[dateKey].c = parseInt(document.getElementById('edit-c').value) || 0;
+            window.db.days[dateKey].water = parseInt(document.getElementById('edit-water').value) || 0;
+            window.db.days[dateKey].comment = document.getElementById('edit-comment').value || '';
+
+            window.syncDb();
+            window.closeEditModal();
+            window.renderHistory();
+            window.updateDashboard();
+            window.calcAverages();
+            alert('Zapisano zmiany w historii!');
+        };
+
+        window.saveManualTarget = function() {
+            window.db.target = parseInt(document.getElementById('set-target').value) || 2000;
+            window.syncDb();
+            alert('Cel zapisany!');
+            window.updateDashboard();
+        };
+
+        window.copyDataForAI = function() {
+            const dataString = JSON.stringify(window.db, null, 2);
+            navigator.clipboard.writeText(dataString).then(() => {
+                alert('Dane skopiowane do schowka! Możesz je teraz wkleić w czacie.');
+            }).catch(err => {
+                alert('Nie udało się skopiować automatycznie.');
+            });
+        };
+
+        window.exportData = function() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.db, null, 2));
+            const a = document.createElement('a');
+            a.setAttribute("href", dataStr);
+            a.setAttribute("download", `dieta_export_${window.todayKey}.json`);
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        };
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
         }
-      }
-    }
-  </script>
+
+        window.updateDashboard();
+    </script>
 </body>
 </html>
-
-
-
-
