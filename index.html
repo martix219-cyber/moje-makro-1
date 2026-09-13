@@ -74,12 +74,15 @@
         button.btn-ai { background: var(--accent-blue); margin-top: 8px; color: #fff; border: none; }
         button.btn-water { background: var(--accent-water); margin-top: 8px; color: #fff; }
         button.btn-sm { width: auto; padding: 4px 10px; font-size: 11px; margin-top: 5px; cursor: pointer; }
+        button.btn-danger { background: #e53935; color: white; border: none; padding: 4px 8px; border-radius: 6px; font-size: 11px; cursor: pointer; }
 
         .stat-box { text-align: center; background: #252525; padding: 10px; border-radius: 8px; }
         .stat-num { font-size: 18px; font-weight: bold; }
         .stat-lbl { font-size: 10px; color: var(--subtext); }
         .history-item { background: #252525; padding: 12px; border-radius: 8px; margin-bottom: 8px; font-size: 12px; position: relative; }
         
+        .meal-item { background: #2a2a2a; padding: 8px 12px; border-radius: 6px; margin-top: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; border-left: 3px solid var(--accent); }
+
         .water-bar { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 12px; border-radius: 8px; margin-top: 10px; }
         .preset-btn { background: #333; border: 1px solid var(--border); color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; margin-right: 5px; margin-top: 5px; }
 
@@ -98,7 +101,6 @@
 
     <div id="userStatus" style="font-size:11px; color: var(--subtext); text-align:center; padding: 4px; background: #1a1a1a;">Niezalogowano (dane lokalne)</div>
 
-    <!-- PASEK SERII DNI (STREAK) -->
     <div id="streak-box" style="text-align:center; padding: 8px; background: #1e1e1e; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: bold; color: #ff9800;">
         🔥 Seria: 0 dni z rzędu!
     </div>
@@ -114,7 +116,6 @@
                 <div class="stat-box"><div class="stat-num" id="disp-balance">0</div><div class="stat-lbl">📉 Bilans netto</div></div>
             </div>
 
-            <!-- PASEK: KALORIE -->
             <div style="margin-top: 15px;">
                 <label style="margin-top: 0; font-weight: bold; color: #fff;">Cel kalorii:</label>
                 <div class="progress-container">
@@ -123,7 +124,6 @@
                 </div>
             </div>
 
-            <!-- PASEK: BIAŁKO -->
             <div style="margin-top: 12px;">
                 <label style="margin-top: 0; font-weight: bold; color: #fff;">Cel białka:</label>
                 <div class="progress-container">
@@ -132,7 +132,6 @@
                 </div>
             </div>
 
-            <!-- PASEK: KROKI -->
             <div style="margin-top: 12px;">
                 <label style="margin-top: 0; font-weight: bold; color: #fff;">Cel kroków:</label>
                 <div class="progress-container">
@@ -140,6 +139,12 @@
                     <div class="progress-text" id="steps-progress-text">0%</div>
                 </div>
             </div>
+        </div>
+
+        <!-- LISTA POSIŁKÓW DZISIAJ -->
+        <div class="card">
+            <h2>🍽️ Dzisiejsze Posiłki</h2>
+            <div id="today-meals-list" style="font-size: 13px; color: var(--subtext);">Brak zapisanych posiłków.</div>
         </div>
 
         <!-- NAWODNIENIE -->
@@ -203,7 +208,7 @@
             </div>
 
             <label>Nazwa posiłku / dania</label>
-            <input type="text" id="inp-meal-name" placeholder="np. Obiadek z pulpetami">
+            <input type="text" id="inp-meal-name" placeholder="np. Kurczak z ryżem">
 
             <label>Kalorie (kcal)</label>
             <input type="number" id="inp-kcal" placeholder="np. 550">
@@ -215,14 +220,14 @@
                 <input type="number" id="inp-c" placeholder="W">
             </div>
 
-            <button class="btn" onclick="saveWpisPart('posilki')">Zapisz do Dziennika</button>
+            <button class="btn" onclick="saveWpisPart('posilki')">Zapisz Posiłek</button>
             <button class="btn btn-sec" onclick="saveAsPreset()">★ Zapisz jako Szablon</button>
         </div>
 
         <!-- FORMULARZ: KROKI -->
         <div id="subform-kroki" class="card sub-form">
             <button class="btn-back" onclick="closeWpisSubForm()">← Powrót</button>
-            <h2>👟 Zapisz Liczbę Kroki</h2>
+            <h2>👟 Zapisz Liczbę Kroków</h2>
             <label>Liczba kroków</label>
             <input type="number" id="inp-steps" placeholder="np. 8500">
             <button class="btn" onclick="saveWpisPart('kroki')">Zapisz Kroki</button>
@@ -311,23 +316,11 @@
             <label>Godzina pomiaru wagi</label>
             <input type="time" id="edit-weight-time">
 
-            <label>Kalorie (kcal)</label>
-            <input type="number" id="edit-kcal">
-
             <label>Zegarek / Spalone (kcal)</label>
             <input type="number" id="edit-watch">
 
             <label>Kroki</label>
             <input type="number" id="edit-steps">
-
-            <label>Białko (g)</label>
-            <input type="number" id="edit-p">
-
-            <label>Tłuszcz (g)</label>
-            <input type="number" id="edit-f">
-
-            <label>Węglowodany (g)</label>
-            <input type="number" id="edit-c">
 
             <label>Woda (ml)</label>
             <input type="number" id="edit-water">
@@ -469,21 +462,29 @@
         };
 
         window.addWater = function(ml) {
-            if (!window.db.days[window.todayKey]) window.db.days[window.todayKey] = { kcal: 0, p: 0, f: 0, c: 0, watch: 0, weight: 0, weightTime: '', water: 0, steps: 0, comment: '' };
+            if (!window.db.days[window.todayKey]) window.db.days[window.todayKey] = { kcal: 0, p: 0, f: 0, c: 0, watch: 0, weight: 0, weightTime: '', water: 0, steps: 0, comment: '', meals: [] };
             window.db.days[window.todayKey].water = (window.db.days[window.todayKey].water || 0) + ml;
             window.syncDb();
             window.updateDashboard();
         };
 
         window.saveWpisPart = function(type) {
-            if (!window.db.days[window.todayKey]) window.db.days[window.todayKey] = { kcal: 0, p: 0, f: 0, c: 0, watch: 0, weight: 0, weightTime: '', water: 0, steps: 0, comment: '' };
+            if (!window.db.days[window.todayKey]) window.db.days[window.todayKey] = { kcal: 0, p: 0, f: 0, c: 0, watch: 0, weight: 0, weightTime: '', water: 0, steps: 0, comment: '', meals: [] };
             const current = window.db.days[window.todayKey];
+            if (!current.meals) current.meals = [];
 
             if (type === 'posilki') {
-                current.kcal = (current.kcal || 0) + (parseInt(document.getElementById('inp-kcal').value) || 0);
-                current.p = (current.p || 0) + (parseInt(document.getElementById('inp-p').value) || 0);
-                current.f = (current.f || 0) + (parseInt(document.getElementById('inp-f').value) || 0);
-                current.c = (current.c || 0) + (parseInt(document.getElementById('inp-c').value) || 0);
+                const name = document.getElementById('inp-meal-name').value || 'Posiłek';
+                const kcal = parseInt(document.getElementById('inp-kcal').value) || 0;
+                const p = parseInt(document.getElementById('inp-p').value) || 0;
+                const f = parseInt(document.getElementById('inp-f').value) || 0;
+                const c = parseInt(document.getElementById('inp-c').value) || 0;
+
+                // Zapisujemy nowy posiłek do listy
+                current.meals.push({ id: Date.now(), name, kcal, p, f, c });
+
+                // Przeliczamy ogólne sumy dla dnia
+                window.recalcDayTotals(window.todayKey);
 
                 document.getElementById('inp-meal-name').value = '';
                 document.getElementById('inp-kcal').value = '';
@@ -507,6 +508,29 @@
             window.updateDashboard();
             window.closeWpisSubForm();
             window.showPage('panel');
+        };
+
+        window.recalcDayTotals = function(dateKey) {
+            const day = window.db.days[dateKey];
+            if (!day || !day.meals) return;
+            
+            day.kcal = day.meals.reduce((sum, m) => sum + (m.kcal || 0), 0);
+            day.p = day.meals.reduce((sum, m) => sum + (m.p || 0), 0);
+            day.f = day.meals.reduce((sum, m) => sum + (m.f || 0), 0);
+            day.c = day.meals.reduce((sum, m) => sum + (m.c || 0), 0);
+        };
+
+        window.deleteMeal = function(dateKey, mealId) {
+            const day = window.db.days[dateKey];
+            if (day && day.meals) {
+                day.meals = day.meals.filter(m => m.id !== mealId);
+                window.recalcDayTotals(dateKey);
+                window.syncDb();
+                window.updateDashboard();
+                if (document.getElementById('page-stats').classList.contains('active')) {
+                    window.renderHistory();
+                }
+            }
         };
 
         window.saveAsPreset = function() {
@@ -541,7 +565,6 @@
             });
         };
 
-        // SYSTEM NAWYKÓW (STREAKS)
         window.calcStreak = function() {
             let streak = 0;
             let checkDate = new Date();
@@ -580,7 +603,7 @@
         };
 
         window.updateDashboard = function() {
-            const today = window.db.days[window.todayKey] || { kcal: 0, p: 0, f: 0, c: 0, watch: 0, water: 0, steps: 0 };
+            const today = window.db.days[window.todayKey] || { kcal: 0, p: 0, f: 0, c: 0, watch: 0, water: 0, steps: 0, meals: [] };
             document.getElementById('disp-kcal').innerText = today.kcal || 0;
             document.getElementById('disp-watch').innerText = today.watch || 0;
             document.getElementById('disp-target').innerText = window.db.target || 2000;
@@ -592,6 +615,22 @@
             document.getElementById('disp-p').innerText = (today.p || 0) + 'g';
             document.getElementById('disp-f').innerText = (today.f || 0) + 'g';
             document.getElementById('disp-c').innerText = (today.c || 0) + 'g';
+
+            // LISTA DZISIEJSZYCH POSIŁKÓW
+            const mealsListEl = document.getElementById('today-meals-list');
+            if (today.meals && today.meals.length > 0) {
+                mealsListEl.innerHTML = today.meals.map(m => `
+                    <div class="meal-item">
+                        <div>
+                            <strong>${m.name}</strong> - ${m.kcal} kcal 
+                            <span style="color:var(--subtext); font-size:11px;">(B: ${m.p}g | T: ${m.f}g | W: ${m.c}g)</span>
+                        </div>
+                        <button class="btn-danger" onclick="deleteMeal('${window.todayKey}', ${m.id})">🗑️</button>
+                    </div>
+                `).join('');
+            } else {
+                mealsListEl.innerText = "Brak zapisanych posiłków dzisiaj.";
+            }
 
             // PASEK KALORII
             const targetKcal = window.db.target || 2000;
@@ -681,15 +720,26 @@
                 const weightDisplay = item.weight ? `${item.weight} kg ${item.weightTime ? '(' + item.weightTime + ')' : ''}` : '-';
                 const commentDisplay = item.comment ? `<br>💬 <em>${item.comment}</em>` : '';
 
+                let mealsHtml = '';
+                if (item.meals && item.meals.length > 0) {
+                    mealsHtml = '<div style="margin-top:5px;">' + item.meals.map(m => `
+                        <div class="meal-item" style="padding:4px 8px; font-size:11px;">
+                            <span><strong>${m.name}</strong> - ${m.kcal} kcal (B:${m.p} T:${m.f} W:${m.c})</span>
+                            <button class="btn-danger" style="padding:2px 5px;" onclick="deleteMeal('${date}', ${m.id})">🗑️</button>
+                        </div>
+                    `).join('') + '</div>';
+                }
+
                 list.innerHTML += `
                     <div class="history-item">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <strong>📅 ${date}</strong>
-                            <button class="btn btn-sec btn-sm" onclick="openEditModal('${date}')">✏️ Edytuj</button>
+                            <button class="btn btn-sec btn-sm" onclick="openEditModal('${date}')">✏️ Edytuj Dzień</button>
                         </div>
                         Waga: ${weightDisplay} | Woda: ${item.water || 0} ml | Kroki: ${item.steps || 0}<br>
                         🥑 Kalorie: ${item.kcal || 0} kcal | 🔥 Zegarek: ${item.watch || 0} kcal<br>
                         🥩 B: ${item.p || 0}g | T: ${item.f || 0}g | W: ${item.c || 0}g
+                        ${mealsHtml}
                         ${commentDisplay}
                     </div>`;
             });
@@ -701,12 +751,8 @@
             document.getElementById('edit-modal-title').innerText = `✏️ Edycja: ${dateKey}`;
             document.getElementById('edit-weight').value = item.weight || '';
             document.getElementById('edit-weight-time').value = item.weightTime || '';
-            document.getElementById('edit-kcal').value = item.kcal || 0;
             document.getElementById('edit-watch').value = item.watch || 0;
             document.getElementById('edit-steps').value = item.steps || 0;
-            document.getElementById('edit-p').value = item.p || 0;
-            document.getElementById('edit-f').value = item.f || 0;
-            document.getElementById('edit-c').value = item.c || 0;
             document.getElementById('edit-water').value = item.water || 0;
             document.getElementById('edit-comment').value = item.comment || '';
 
@@ -723,12 +769,8 @@
 
             window.db.days[dateKey].weight = parseFloat(document.getElementById('edit-weight').value) || 0;
             window.db.days[dateKey].weightTime = document.getElementById('edit-weight-time').value || '';
-            window.db.days[dateKey].kcal = parseInt(document.getElementById('edit-kcal').value) || 0;
             window.db.days[dateKey].watch = parseInt(document.getElementById('edit-watch').value) || 0;
             window.db.days[dateKey].steps = parseInt(document.getElementById('edit-steps').value) || 0;
-            window.db.days[dateKey].p = parseInt(document.getElementById('edit-p').value) || 0;
-            window.db.days[dateKey].f = parseInt(document.getElementById('edit-f').value) || 0;
-            window.db.days[dateKey].c = parseInt(document.getElementById('edit-c').value) || 0;
             window.db.days[dateKey].water = parseInt(document.getElementById('edit-water').value) || 0;
             window.db.days[dateKey].comment = document.getElementById('edit-comment').value || '';
 
@@ -783,7 +825,7 @@
                     } else {
                         alert("Nieprawidłowy format danych.");
                     }
-                } catch(e) {
+        mm        } catch(e) {
                     alert("Błąd odczytu danych. Upewnij się, że wklejasz poprawny kod JSON.");
                 }
             }
