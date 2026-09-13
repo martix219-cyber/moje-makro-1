@@ -246,6 +246,7 @@
             <h2>📤 Eksport i Przekazywanie</h2>
             <button class="btn btn-ai" onclick="copyDataForAI()">📋 Kopiuj dane dla AI</button>
             <button class="btn btn-sec" onclick="exportData()">Eksportuj dane do JSON</button>
+            <button class="btn btn-sec" style="border-color: #4caf50; color: #4caf50;" onclick="importDataPrompt()">📥 Importuj dane z JSON</button>
         </div>
     </div>
 
@@ -317,7 +318,6 @@
 
         let currentUser = null;
 
-        // Inicjalizacja db lokalnego
         window.db = { target: 2000, presets: [], days: {} };
         try {
             const saved = localStorage.getItem('fitTrackerData');
@@ -328,7 +328,6 @@
 
         window.todayKey = new Date().toISOString().split('T')[0];
 
-        // Funkcje Zpisu
         window.syncDb = async function() {
             localStorage.setItem('fitTrackerData', JSON.stringify(window.db));
             if (currentUser) {
@@ -362,7 +361,6 @@
                 loginBtn.textContent = "Wyloguj";
                 userStatus.textContent = `Zalogowano jako: ${user.displayName || user.email} (Chmura aktywna)`;
 
-                // Weryfikacja danych w Firebase
                 const userDocRef = doc(dbFirebase, "users", user.uid);
                 const docSnap = await getDoc(userDocRef);
 
@@ -370,7 +368,6 @@
                     window.db = docSnap.data();
                     localStorage.setItem('fitTrackerData', JSON.stringify(window.db));
                 } else {
-                    // Migracja danych lokalnych przy pierwszym logowaniu
                     await setDoc(userDocRef, window.db);
                 }
                 window.updateDashboard();
@@ -628,7 +625,7 @@
         window.copyDataForAI = function() {
             const dataString = JSON.stringify(window.db, null, 2);
             navigator.clipboard.writeText(dataString).then(() => {
-                alert('Dane skopiowane do schowka! Możesz je teraz wkleić w czacie.');
+                alert('Dane skopiowane do schowka!');
             }).catch(err => {
                 alert('Nie udało się skopiować automatycznie.');
             });
@@ -642,6 +639,25 @@
             document.body.appendChild(a);
             a.click();
             a.remove();
+        };
+
+        window.importDataPrompt = function() {
+            const jsonText = prompt("Wklej tutaj treść skopiowanego pliku JSON:");
+            if (jsonText) {
+                try {
+                    const parsed = JSON.parse(jsonText);
+                    if (parsed && parsed.days) {
+                        window.db = parsed;
+                        window.syncDb();
+                        window.updateDashboard();
+                        alert("Sukces! Dane zostały wczytane i zapisane.");
+                    } else {
+                        alert("Nieprawidłowy format danych.");
+                    }
+                } catch(e) {
+                    alert("Błąd odczytu danych. Upewnij się, że wklejasz poprawny kod JSON.");
+                }
+            }
         };
 
         if ('serviceWorker' in navigator) {
